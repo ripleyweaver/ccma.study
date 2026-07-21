@@ -3,7 +3,7 @@
 // Quiz engine, domain weighting, randomization, localStorage
 // ============================================================
 
-const APP_VERSION  = '1.2.1';
+const APP_VERSION  = '1.2.2';
 
 // ============================================================
 // UNLOAD PROTECTION

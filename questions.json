@@ -8744,12 +8744,12 @@
       "id": "d03a-266",
       "question": "A medical assistant is preparing to obtain orthostatic vital signs for a patient who reports dizziness. In which order should the assistant measure the patient’s blood pressure and pulse?",
       "choices": [
-        "Sitting, standing, then supine",
         "Supine, sitting, then standing",
-        "Standing, sitting, then supine",
-        "Standing, supine, then sitting"
+        "Supine, standing, then sitting",
+        "Sitting, supine, then standing",
+        "Sitting, standing, then supine"
       ],
-      "correctIndex": 1,
+      "correctIndex": 0,
       "explanation": "Orthostatic vital signs are measured as the patient moves from lying to sitting and then standing to identify changes in blood pressure and pulse associated with position changes."
     },
     {
@@ -30097,9 +30097,9 @@
       "question": "A medical assistant uses open-ended questions, listens without interruption, and responds empathetically to a patient who is anxious about a procedure. Which type of interaction is the medical assistant demonstrating?",
       "choices": [
         "Therapeutic communication",
-        "Nonverbal communication",
-        "Professional communication",
-        "Social communication"
+        "Motivational interviewing",
+        "Active listening",
+        "Assertive communication"
       ],
       "correctIndex": 0,
       "explanation": "Therapeutic communication is an interaction between a patient and a medical professional that is focused on improving the patient’s physical and emotional well-being."
