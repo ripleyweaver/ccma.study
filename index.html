@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="CCMA Study">
+<link rel="icon" href="./favicon.ico?v=1.2.0" sizes="any">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg?v=1.2.0">
+<link rel="icon" type="image/png" sizes="48x48" href="./favicon-48.png?v=1.2.0">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png?v=1.2.0">
+<link rel="icon" type="image/png" sizes="16x16" href="./favicon-16.png?v=1.2.0">
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png?v=1.2.0">
+<link rel="mask-icon" href="./safari-pinned-tab.svg" color="#232323">
+<link rel="manifest" href="./manifest.webmanifest">
+<meta name="theme-color" content="#1A1A1A">
+<title>CCMA Study</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1.2.0">
+</head>
+<body>
+
+<!-- ============ HOME SCREEN ============ -->
+<div id="screen-home" class="screen active">
+  <div class="home-top-row">
+    <div class="home-header">
+      <h1 tabindex="-1">CCMA Study</h1>
+    </div>
+    <button type="button" class="theme-switcher" id="theme-switcher"
+            onclick="cycleThemeMode()"
+            aria-label="Theme: Dark" title="Theme: Dark">
+      <span id="theme-switcher-icon" aria-hidden="true">🌙</span>
+    </button>
+  </div>
+
+  <div id="load-error-banner" class="load-error-banner" hidden>
+    <p>Couldn't load the question bank. Check your connection and try again.</p>
+    <button type="button" onclick="retryLoadQuestions()">Retry</button>
+  </div>
+
+  <div class="quiz-list">
+    <button type="button" class="quiz-row" id="quick-btn" onclick="startQuickQuiz()">
+      <span class="quiz-row-text">
+        <span class="quiz-row-title">Start Quick Quiz</span>
+        <span class="quiz-row-sub">35 questions &middot; weighted by domain</span>
+      </span>
+    </button>
+    <button type="button" class="quiz-row" id="mock-btn" onclick="startMockExam()">
+      <span class="quiz-row-text">
+        <span class="quiz-row-title">Begin Mock Exam</span>
+        <span class="quiz-row-sub">180 questions &middot; weighted full exam</span>
+      </span>
+    </button>
+    <button type="button" class="quiz-row" id="term-btn" onclick="startTerminologyQuiz()">
+      <span class="quiz-row-text">
+        <span class="quiz-row-title">Medical Terminology</span>
+        <span class="quiz-row-sub">35 questions &middot; word parts &amp; abbreviations</span>
+      </span>
+    </button>
+    <button type="button" class="quiz-row" id="missed-btn" onclick="startMissedQuiz()">
+      <span class="quiz-row-text">
+        <span class="quiz-row-title">Missed Questions Quiz</span>
+        <span class="quiz-row-sub" id="missed-sub">No missed questions right now</span>
+      </span>
+    </button>
+    <button type="button" class="quiz-row" onclick="showScreen('domain-picker')">
+      <span class="quiz-row-text">
+        <span class="quiz-row-title">Study by Domain</span>
+        <span class="quiz-row-sub">35 questions &middot; pick a domain</span>
+      </span>
+    </button>
+  </div>
+
+  <div class="home-secondary-actions">
+    <button type="button" class="view-progress" onclick="showScreen('progress')">View Performance</button>
+  </div>
+
+  <div class="version-tag" id="app-version"></div>
+</div>
+
+<!-- ============ PERFORMANCE SCREEN ============ -->
+<div id="screen-progress" class="screen">
+  <div class="top-bar">
+    <button type="button" class="back-link" onclick="showScreen('home')">← Back</button>
+    <span class="spacer"></span>
+  </div>
+
+  <h2 class="pick-title" tabindex="-1">Performance</h2>
+  <div class="pick-sub">Your score by domain</div>
+
+  <div class="domain-list" id="domain-score-list"></div>
+
+  <button type="button" class="clear-history-btn" onclick="clearHistory()">Clear History</button>
+</div>
+
+<!-- ============ DOMAIN PICKER SCREEN ============ -->
+<div id="screen-domain-picker" class="screen">
+  <div class="top-bar">
+    <button type="button" class="back-link" onclick="showScreen('home')">← Back</button>
+    <span class="spacer"></span>
+  </div>
+
+  <h2 class="pick-title" id="domain-picker-title" tabindex="-1">Study by Domain</h2>
+  <div class="pick-sub">35 questions &middot; tap a domain to start</div>
+
+  <div class="domain-pick-list" id="domain-pick-list"></div>
+</div>
+
+<!-- ============ QUIZ SCREEN ============ -->
+<div id="screen-quiz" class="screen">
+  <h2 class="sr-only" id="quiz-screen-heading" tabindex="-1">Quiz question</h2>
+
+  <div class="quiz-header-row">
+    <div class="progress-text" id="quiz-progress-text">01 / 35</div>
+    <button type="button" class="quit-btn" onclick="quitQuiz()">Quit</button>
+  </div>
+  <div class="progress-bar-track">
+    <div class="progress-bar-fill" id="quiz-progress-fill"></div>
+  </div>
+
+  <div class="domain-label" id="quiz-domain-label"></div>
+  <div class="question-box" id="quiz-question-text"></div>
+
+  <!-- Live region announces correct/incorrect to screen readers -->
+  <div id="quiz-answer-status" role="status" aria-live="polite" class="sr-only"></div>
+
+  <div class="choices" id="quiz-choices"></div>
+
+  <button type="button" class="next-btn" id="quiz-next-btn" hidden onclick="nextQuestion()">
+    Next Question
+  </button>
+</div>
+
+<!-- ============ RESULTS SCREEN ============ -->
+<div id="screen-results" class="screen">
+  <div class="top-bar">
+    <span class="spacer"></span>
+    <h2 class="app-title" tabindex="-1">Quiz Complete</h2>
+    <span class="spacer"></span>
+  </div>
+
+  <div class="score-box">
+    <div class="score-percent" id="results-percent">--%</div>
+    <div class="score-fraction" id="results-fraction">-- of -- correct</div>
+    <div class="score-quiz-type" id="results-quiz-type">--</div>
+  </div>
+
+  <div class="domain-breakdown-card">
+    <button type="button" class="section-toggle" id="results-breakdown-toggle"
+            aria-expanded="false" aria-controls="results-domain-breakdown"
+            onclick="toggleResultsBreakdown()">
+      <span class="toggle-label">View Domain Breakdown</span>
+      <span class="section-toggle-chevron" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </span>
+    </button>
+    <div id="results-domain-breakdown" class="domain-breakdown" hidden></div>
+  </div>
+
+  <div class="action-buttons">
+    <button type="button" class="btn-home" id="results-retry-btn" onclick="retryQuiz()">Try Another Quiz</button>
+    <button type="button" class="btn-progress" onclick="showScreen('home')">Home</button>
+  </div>
+</div>
+
+<script src="app.js?v=1.2.0" defer></script>
+</body>
+</html>
