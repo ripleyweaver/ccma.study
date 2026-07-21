@@ -1,10 +1,10 @@
-const CACHE_NAME = "ccma-study-v1-2-0";
+const CACHE_NAME = "ccma-study-v1-2-1";
 
 const APP_SHELL = [
   "./",
   "./index.html",
-  "./style.css?v=1.2.0",
-  "./app.js?v=1.2.0",
+  "./style.css?v=1.2.1",
+  "./app.js?v=1.2.1",
   "./questions.json",
   "./manifest.webmanifest",
   "./favicon.ico",

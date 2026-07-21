@@ -3,7 +3,7 @@
 // Quiz engine, domain weighting, randomization, localStorage
 // ============================================================
 
-const APP_VERSION  = '1.2.0';
+const APP_VERSION  = '1.2.1';
 
 // ============================================================
 // UNLOAD PROTECTION
@@ -748,6 +748,10 @@ function renderResultsScreen(record) {
   });
 }
 
+function scoreLabel(pct) {
+  return pct === 100 ? '🏆 100%' : `${pct}%`;
+}
+
 function quizTypeLabel(record) {
   if (record.type === 'practice' && record.length === 35)  return 'Quick Quiz';
   if (record.type === 'practice' && record.length === 180) return 'Mock Exam';
@@ -774,7 +778,7 @@ function renderProgressScreen() {
     const row = document.createElement('div');
     row.className = 'domain-row';
     const score = total > 0
-      ? `<span class="domain-score">${Math.round((mastered / total) * 100)}%</span>`
+      ? `<span class="domain-score">${scoreLabel(Math.round((mastered / total) * 100))}</span>`
       : `<span class="domain-score empty">—</span>`;
     row.innerHTML = `<span class="domain-name">${getDomainDisplayName(key)}</span>${score}`;
     return row;
