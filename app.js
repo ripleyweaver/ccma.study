@@ -3,7 +3,7 @@
 // Quiz engine, domain weighting, randomization, localStorage
 // ============================================================
 
-const APP_VERSION  = '1.2.2';
+const APP_VERSION  = '1.2.4';
 
 // ============================================================
 // UNLOAD PROTECTION
@@ -379,19 +379,63 @@ function renderDomainPicker() {
   });
 }
 
-let lastQuizParams = null; // { type, length, domainKey } — used by retryQuiz()
+let lastQuizParams  = null; // { type, length, domainKey } — used by retryQuiz()
+let lastQuizReview  = null; // full question+answer data for Review Answers panel
 
 function retryQuiz() {
   if (!lastQuizParams) { showScreen('home'); return; }
   buildQuiz(lastQuizParams.type, lastQuizParams.length, lastQuizParams.domainKey);
 }
 
-function toggleResultsBreakdown() {
-  const toggle      = document.getElementById('results-breakdown-toggle');
-  const breakdown   = document.getElementById('results-domain-breakdown');
-  const isExpanded  = toggle.getAttribute('aria-expanded') === 'true';
-  toggle.setAttribute('aria-expanded', String(!isExpanded));
-  breakdown.hidden  = isExpanded;
+function toggleReviewAnswers() {
+  const toggle  = document.getElementById('results-review-toggle');
+  const list    = document.getElementById('results-review-list');
+  const opening = list.hidden;
+  toggle.setAttribute('aria-expanded', String(opening));
+  list.hidden = !opening;
+  if (opening && list.innerHTML === '') renderReviewList(list);
+}
+
+function renderReviewList(container) {
+  if (!lastQuizReview || lastQuizReview.length === 0) {
+    container.innerHTML = '<div style="padding:16px;color:var(--muted);font-size:var(--text-sm);">No answers to review.</div>';
+    return;
+  }
+  const letters = ['A','B','C','D','E'];
+  lastQuizReview.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'review-card' + (item.correct ? ' review-card--correct' : ' review-card--incorrect');
+    const choicesHtml = item.choices.map((c, i) => {
+      let cls = 'review-choice';
+      if (i === item.correctIndex)                cls += ' review-choice--correct';
+      if (i === item.userIndex && !item.correct)  cls += ' review-choice--wrong';
+      return `<div class="${cls}">
+        <span class="review-choice-letter">${letters[i]}.</span>
+        <span>${escapeHtml(c)}</span>
+      </div>`;
+    }).join('');
+    card.innerHTML = `
+      <div class="review-card-header">
+        <span class="review-q-num">${idx + 1}</span>
+        <span class="review-result-badge ${item.correct ? 'badge--correct' : 'badge--incorrect'}">${item.correct ? 'Correct' : 'Incorrect'}</span>
+      </div>
+      <div class="review-question">${escapeHtml(item.question)}</div>
+      <div class="review-choices">${choicesHtml}</div>
+      <button type="button" class="explanation-toggle" aria-expanded="false">
+        <span>Show Explanation</span><span class="chevron" aria-hidden="true">⌄</span>
+      </button>
+      <div class="explanation-box" hidden>${escapeHtml(item.explanation)}</div>`;
+    const btn  = card.querySelector('.explanation-toggle');
+    const expl = card.querySelector('.explanation-box');
+    btn.onclick = () => {
+      const op = expl.hidden;
+      expl.hidden = !op;
+      btn.setAttribute('aria-expanded', String(op));
+      btn.querySelector('span:first-child').textContent = op ? 'Hide Explanation' : 'Show Explanation';
+      btn.querySelector('.chevron').textContent = op ? '⌃' : '⌄';
+    };
+    container.appendChild(card);
+  });
 }
 function startQuickQuiz()       { buildQuiz('practice',    35,  null); }
 function startMockExam()        { buildQuiz('practice',    180, null); }
@@ -467,8 +511,11 @@ function buildWeightedPool(length) {
   const usedIds = new Set();
 
   Object.keys(counts).forEach(domKey => {
-    const need      = counts[domKey];
-    const available = shuffle([...(QUESTIONS[domKey] || [])]);
+    const need    = counts[domKey];
+    // Unseen questions first, then correctly answered — preserves weight, maximises variety
+    const unseen  = shuffle((QUESTIONS[domKey] || []).filter(q => !answeredCorrectly.has(q.id)));
+    const seen    = shuffle((QUESTIONS[domKey] || []).filter(q =>  answeredCorrectly.has(q.id)));
+    const available = [...unseen, ...seen];
     let taken = 0;
     for (const q of available) {
       if (taken >= need) break;
@@ -661,6 +708,7 @@ function selectAnswer(choiceIndex) {
   currentQuiz.answers.push({
     questionId:   q.id,
     correct:      isCorrect,
+    choiceIndex:  choiceIndex,
     sourceDomain: q.sourceDomain
   });
 
@@ -693,6 +741,17 @@ function finishQuiz() {
     domainKey: currentQuiz.domainKey
   };
 
+  // Store full questions + answers for the Review Answers panel
+  lastQuizReview = currentQuiz.questions.map((q, i) => ({
+    question:     q.question,
+    choices:      q.choices,
+    correctIndex: q.correctIndex,
+    explanation:  q.explanation,
+    sourceDomain: q.sourceDomain,
+    userIndex:    currentQuiz.answers[i] ? currentQuiz.answers[i].choiceIndex : null,
+    correct:      currentQuiz.answers[i] ? currentQuiz.answers[i].correct : false
+  }));
+
   const total   = currentQuiz.answers.length;
   const correct = currentQuiz.answers.filter(a => a.correct).length;
   const percent = total > 0 ? Math.round((correct / total) * 100) : 0;
@@ -722,30 +781,12 @@ function renderResultsScreen(record) {
   document.getElementById('results-quiz-type').textContent =
     `${quizTypeLabel(record)} \u00b7 ${record.length} questions`;
 
-  // Reset breakdown toggle to collapsed
-  const toggle    = document.getElementById('results-breakdown-toggle');
-  const breakdown = document.getElementById('results-domain-breakdown');
+  // Reset review toggle to collapsed and clear previous content
+  const toggle = document.getElementById('results-review-toggle');
+  const list   = document.getElementById('results-review-list');
   toggle.setAttribute('aria-expanded', 'false');
-  breakdown.hidden = true;
-
-  const container = document.getElementById('results-domain-breakdown');
-  container.innerHTML = '';
-
-  const orderedKeys = [
-    ...DOMAIN_DISPLAY_ORDER.filter(k => record.breakdown[k]),
-    ...(record.breakdown.terminology ? ['terminology'] : [])
-  ];
-
-  orderedKeys.forEach(key => {
-    const stat = record.breakdown[key];
-    const pct  = Math.round((stat.correct / stat.total) * 100);
-    const row  = document.createElement('div');
-    row.className = 'domain-row';
-    row.innerHTML = `
-      <span class="domain-name">${getDomainDisplayName(key)}</span>
-      <span class="domain-score">${pct}%</span>`;
-    container.appendChild(row);
-  });
+  list.hidden    = true;
+  list.innerHTML = '';
 }
 
 function scoreLabel(pct) {
